@@ -11,8 +11,11 @@ Alpha Version 0.1, by Shibo Chen
   * [Parameterization](#parameterization)
   * [Connection](#connection)
   * [Bulk Connections](#bulk-connection)
-* [Function Level Programming](#function-level-programming)
-* [High-level Abstractions](#high-level-abstractions)
+* [Functionality Level Programming](#functionality-level-programming)
+* [Component Level Programming](#component-level-programming)
+  * [Fixed Ports Interface for Fast Integration](#fixed-ports-interface-for-fast-integration)
+  * [High-level Abstractions](#high-level-abstractions)
+* [Pipeline Level Programming](#pipeline-level-programming)
 * [Data Types](#data-types)
   * [Casting](#casting)
 
@@ -138,7 +141,7 @@ myModuleA <> myModuleB
 myModuleA <> new Bundle(myModuleB.in1, myModuleB.in2, myModuleB.out, myModuleB.out_flip)
 ```
 
-## Function Level Programming
+## Functionality Level Programming
 
 In Scala and Chisel, functions and methods are used to form reusable hardware components. While it does help with reusablity, it doesn't help much with simplicity and usability. If a single module has multiple functionalities, logics and gates would usually tangle up together, which makes it difficult to read and understand. One of the goals of Simple Chisel is to make codes readable and easy to maintain.
 
@@ -254,7 +257,91 @@ ALu_parallel.ADD <> new Bundle(in1_add, in2_add, out_add)
 ALu_parallel.SUB <> new Bundle(in1_sub, in2_sub, out_sub)
 ```
 
-## High-level Abstractions
+## Component Level Programming
+
+### Fixed Ports Interface for Fast Integration
+
+What we found the flexibility given to the developer by most of the HDLs, while unnecessary at all, gives any person other than the developer a real headache to understand and modify the code.
+
+A very representative case is the number of ports and the order of ports. Let's take memory as an easy example.
+
+In a typical design, a SRAM memory would have a very different ports configuration with a FIFO queue even though their functionality is essentially the same: storing data.
+For a SRAM memory block, it usually has `wr_data_in`, `wr_address_in`, `rd_address_in`, `rd_data_out`, `cmd_in` and additional ports for decoupling.
+For a FIFO queue, ports would be different. A FIFO queue would not have ports for address. It would have `data_in`, `data_out`, `cmd_in` ports.
+
+Now, let's think about one specific case in which the developer needs to change a SRAM memory block to a FIFO queue. Not only the developer needs to change the class of the memory block but also needs to rewire the ports. It's wouldn't be so difficult if the name of the ports are expressive or even have the same names. However, that's almost never the case. Developers usually need to understand a block very well in order to integrate it into the design which undermines the value of abstraction.
+
+In Simple Chisel, we catagorize components into a few common classes. The compoments in each class would be forced to follow the convention which enforces the order of the ports and the number of the ports. In this case, FIFO queue would still need to have `wr_address_in` and `rd_address_in` ports even it doesn't need it.
+
+At a higher level, the developer wouldn't need to do anything beside changing the class of the component.
+
+```scala
+// An SRAM block
+class SRAM extends MEM{
+    // Implementtion detals.
+    // Ports are enforced
+}
+
+// A FIFO queue
+class FIFO extends MEM{
+    // Implementtion detals.
+    // Ports are enforced
+    // Unused ports would be dropped during the elaboration
+}
+
+val sram = new SRAM()
+val fifo = new FIFO()
+
+// Connect to sram
+(data_in, w_addr_in, r_addr_in, r_dataa_out, cmd) <> sram
+
+// Connect to FIFO, w_addr_in and r_addr_in only serve as place holder. It can be anything else.
+(data_in, w_addr_in, r_addr_in, r_dataa_out, cmd) <> fifo
+```
+
+### High-level Abstractions
+
+## Pipeline Level Programming
+
+One of the headaches for lots of programmers is the lack of efficient abstraction of the pipeline stages. It's understandable that none of the HDLs today is providing pipleline level abstraction since it's not indispensible in all designs. Almost all HDLs would provide some kind of sequential logics (A.K.A. Reg) to implement pipeline. However, the lack of abstraction and separation makes debugging and changing the pipeline fundamentally hard.
+
+The chanllage of providing such abstractions lies in the fact that different components may have different latency (# of cycles in synchronized circuits), which makes providing abstractions hard. To address this challenge, Simple Chisel provides an abstraction scheme such that the developer can easily connect the stages together and specify the number of cycles each stage will need.
+
+```scala
+
+// A stage in the pipeline
+class StageOne(
+    op1: Input(32,"decode"), // Input op1 comes from decode stage
+    op2: Input(32,"dcache", data_out), // Input op2 comes from port data_out of decache stage
+    out1: Output(32) // The output would be to the compute stage by default
+) extends Stage{
+    val stage_id = "compute" // Identifier of the stage. Different class can share the same id to indicate they are in the same stage
+
+    def func(){
+        // Functionalities of the current stage
+    }
+}
+
+// Another stage in the pipeline
+class StageTwo(
+    addr: Input("compute",out1) // Input addr comes from the compute stage, port out1. The width can be inferred.
+    data: Input(32, "dcache") // Input data comes from the dcahce stage
+    out: Output(32)
+) extends Stage{
+    val stage_id = "mem_store"
+    def func(){
+        // Functionalities of the current stage
+    }
+}
+
+// The pipeline of a design
+class Pipeline(){
+    val compute_stage = new StageOne()
+    val mem_store_stage = new StageTwo()
+}
+```
+
+In the example above, each output will be instantiated as a `Reg` which is synchronized to the clock. The connection will be automatically established wherever possible.
 
 ## Data Types
 
