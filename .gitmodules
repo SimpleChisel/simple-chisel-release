@@ -1,0 +1,6 @@
+[submodule "simple-chisel"]
+	path = simple-chisel
+	url = git@gitlab.eecs.umich.edu:ablab/simple-chisel.git
+[submodule "simple-chisel-demo"]
+	path = simple-chisel-demo
+	url = git@gitlab.eecs.umich.edu:ablab/simple-chisel-demo.git
