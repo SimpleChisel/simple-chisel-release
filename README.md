@@ -6,10 +6,13 @@ Alpha Version 0.1, by Shibo Chen, Updated 7/3/2020
 
 ## Table of Contents
 
-* [Introduction](#introduction)
-* [Installation](#installation)
-* [Abstraction](#abstraction)
-* [Bulk Connection](#bulk-connection)
+- [Simple Chisel Specification](#simple-chisel-specification)
+  - [Table of Contents](#table-of-contents)
+  - [- Bulk Connection](#ullibulk-connectionliul)
+  - [Introduction](#introduction)
+  - [Installation](#installation)
+  - [Abstraction](#abstraction)
+  - [Bulk Connection](#bulk-connection)
 ---
 
 ## Introduction
@@ -58,3 +61,31 @@ class Datapth extends Module{
 ```
 
 ## Bulk Connection
+
+All modules need to implement `in` and `out` as I/O interface to indicate the input and output respectively. Ports in `in` and `out` do not have to be inputs or outputs only, for example, it can be a `ReadyIO` which outputs a `ready` bit. It represents a general idea of the data flow.
+
+Simple Chisel uses a new `>>>` operator to bulk connect between two modules or Bundle.
+
+```scala
+moduleA >>> moduleB
+/* This is equivalent to 
+ foreach( port <- moduleA.out){ // for each port in A's output 
+   moduleB.in.port := port // Connect it to B's input
+ }
+*/
+bundle >>> module
+/* This is equivalent to 
+ foreach( port <- bundle){ // for each port in bundle
+   module.in.port := port // Connect it to module's input
+ }
+*/
+
+ module >>> bundle
+/* This is equivalent to 
+ foreach( port <- module.out){ // for each port in module's output 
+   module.in.port := port // Connect it to bundle
+ }
+*/
+
+`>>>` operator can be overloaded to all SimpleChisel data or port types.
+```

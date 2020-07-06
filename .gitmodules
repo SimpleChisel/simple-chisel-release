@@ -1,6 +1,8 @@
 [submodule "simple-chisel"]
 	path = simple-chisel
 	url = git@gitlab.eecs.umich.edu:ablab/simple-chisel.git
+	branch = release
 [submodule "simple-chisel-demo"]
 	path = simple-chisel-demo
 	url = git@gitlab.eecs.umich.edu:ablab/simple-chisel-demo.git
+	branch = release
