@@ -8,7 +8,6 @@ Alpha Version 0.1, by Shibo Chen, Updated 7/3/2020
 
 - [Simple Chisel Specification](#simple-chisel-specification)
   - [Table of Contents](#table-of-contents)
-  - [- Bulk Connection](#ullibulk-connectionliul)
   - [Introduction](#introduction)
   - [Installation](#installation)
   - [Abstraction](#abstraction)
