@@ -30,7 +30,7 @@ We explore the idea of hardware polymorphism.
 To install SimpleChisel locally, first you need to get the submodule _simple-chisel_ which contains the language implementation.
 
 ```shell script
-git submodule update --remote
+git submodule init update --remote
 cd simple-chisel
 sbt publishLocal
 ```
@@ -69,7 +69,7 @@ class Datapth extends Module{
 
 ## Bulk Connection
 
-All modules need to implement `in` and `out` as I/O interface to indicate the input and output respectively. Ports in `in` and `out` do not have to be inputs or outputs only, for example, it can be a `ReadyIO` which outputs a `ready` bit. It represents a general idea of the data flow.
+All modules need to implement `in` and `out` as I/O interface to indicate the input and output respectively. Ports in `in` and `out` do not have to be inputs or outputs only, for example, it can be a `DecoupledIO` which outputs a `ready` bit. It represents a general idea of the data flow.
 
 Simple Chisel uses a new `>>>` operator to bulk connect between two modules or Bundle.
 
@@ -197,7 +197,7 @@ module Datapath extends Module{
 |---|---|---|---|---|
 | TightlyConpledIO | n/a  | n/a  | input: `stall`, `clear`<br>output: `stuck`  | number of cycles|  
 | ValidIO | input: `valid`  | output: `valid` | input: `stall`, `clear`  | number of cycles|  
-| ReadyIO  | input: `valid` <br> output: `ready`  | input: `ready` <br> output: `valid`  |  n/a | size of prepending and post pending buffers|  
+| DecoupledIO  | input: `valid` <br> output: `ready`  | input: `ready` <br> output: `valid`  |  n/a | size of prepending and post pending buffers|  
 | OutOfOrderIO  | input: `valid` <br> output: `ready`, `request_ticket_number`  | input: `ready` <br> output: `valid`, `response_ticket_number`  |  n/a | number of most outstanding request
 
 ### Auto-connection between different interfaces
@@ -205,7 +205,7 @@ module Datapath extends Module{
 We now explain automatic connection between modules with different interface when connected with `>>>`.
 |Producer   |TightlyCoupledIO(e)| ValidIO(f) | DecoupledIO(g) | OutOfOrderIO(h)|  
 |---|---|---|---|---|  
-|TightlyCoupledIO(a)|a.ctrl.stall := e.ctrl.stuck|f.in.valid := a.ctrl.stuck \| a.ctrl.stall|a.ctrl.stall := !g.in.ready<br> g.in.valid := a.ctrl.stall\| a.ctrl.stuck|a.ctrl.stall := !h.in.ready<br> h.in.valid := a.ctrl.stall\| a.ctrl.stuck| 
-|ValidIO(b)|---|f.in.valid := b.out.valid<br> b.ctrl.stall := (existing_signals)\|f.ctrl.stall|g.in.valid := b.out.valid <br> b.ctrl.stall := !g.in.ready|h.in.valid := b.out.valid <br> b.ctrl.stall := !h.in.ready| 
-|DecoupledIO(c)|c.out.ready := e.ctrl.stuck \| e.ctrl.stall |c.out.ready := f.ctrl.stall<br>f.in.valid := c.out.valid | c.out.ready := g.in.ready <br> g.in.valid := c.out.valid|c.out.ready := h.in.ready <br> h.in.valid := c.out.valid| 
-|OutOfOrderIO(d)|d.out.ready := e.ctrl.stuck \| e.ctrl.stall|d.out.ready := f.ctrl.stall<br>f.in.valid := d.out.valid|d.out.ready := g.in.ready <br> g.in.valid := d.out.valid|d.out.ready := h.in.ready <br> h.in.valid := d.out.valid|  
+|TightlyCoupledIO(a)|a.ctrl.stall := e.ctrl.stuck|f.ctrl.in.valid := a.ctrl.stuck \| a.ctrl.stall|a.ctrl.stall := !g.ctrl.in.ready<br> g.ctrl.in.valid := a.ctrl.stall\| a.ctrl.stuck|a.ctrl.stall := !h.ctrl.in.ready<br> h.ctrl.in.valid := a.ctrl.stall\| a.ctrl.stuck| 
+|ValidIO(b)|---|f.ctrl.in.valid := b.ctrl.out.valid<br> b.ctrl.stall := (existing_signals)\|f.ctrl.stall|g.ctrl.in.valid := b.ctrl.out.valid <br> b.ctrl.stall := !g.ctrl.in.ready|h.ctrl.in.valid := b.ctrl.out.valid <br> b.ctrl.stall := !h.ctrl.in.ready| 
+|DecoupledIO(c)|c.ctrl.out.ready := e.ctrl.stuck \| e.ctrl.stall |c.ctrl.out.ready := f.ctrl.stall<br>f.ctrl.in.valid := c.ctrl.out.valid | c.ctrl.out.ready := g.ctrl.in.ready <br> g.ctrl.in.valid := c.ctrl.out.valid|c.ctrl.out.ready := h.ctrl.in.ready <br> h.ctrl.in.valid := c.ctrl.out.valid| 
+|OutOfOrderIO(d)|d.ctrl.out.ready := e.ctrl.stuck \| e.ctrl.stall|d.ctrl.out.ready := f.ctrl.stall<br>f.ctrl.in.valid := d.ctrl.out.valid|d.ctrl.out.ready := g.ctrl.in.ready <br> g.ctrl.in.valid := d.ctrl.out.valid|d.ctrl.out.ready := h.ctrl.in.ready <br> h.ctrl.in.valid := d.ctrl.out.valid|  
