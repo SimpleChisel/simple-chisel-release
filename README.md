@@ -126,7 +126,7 @@ module Datapath extends Module{
 }
 ```
 
-`ValidIO` is a very much like the `TightlyCoupledIO` with the only difference that `ValidIO` takes in a `valid` signal indicating the input data is valid and outputs a `valid` signal indicating the output is valid. Therefore there is no need to have another `stuck` signal. 
+`ValidIO` is a very much like the `TightlyCoupledIO` with the only difference that `ValidIO` takes in a `valid` signal indicating the input data is valid and outputs a `valid` signal indicating the output is valid.
 
 ```scala
 module B(val number_of_stages) extends Module with ValidIO(number_of_stages){
@@ -193,19 +193,19 @@ module Datapath extends Module{
 }
 ```
 
-|   | in | out  | ctrl  | parameters|  
+|   | ctrl.in | ctrl.out  | ctrl  | parameters|  
 |---|---|---|---|---|
 | TightlyConpledIO | n/a  | n/a  | input: `stall`, `clear`<br>output: `stuck`  | number of cycles|  
 | ValidIO | input: `valid`  | output: `valid` | input: `stall`, `clear`  | number of cycles|  
-| DecoupledIO  | input: `valid` <br> output: `ready`  | input: `ready` <br> output: `valid`  |  n/a | size of prepending and post pending buffers|  
-| OutOfOrderIO  | input: `valid` <br> output: `ready`, `request_ticket_number`  | input: `ready` <br> output: `valid`, `response_ticket_number`  |  n/a | number of most outstanding request
+| DecoupledIO  | input: `valid` <br> output: `ready`  | input: `ready` <br> output: `valid`  |  `clear` | size of prepending and post pending buffers|  
+| OutOfOrderIO  | input: `valid` <br> output: `ready`, `request_ticket_number`  | input: `ready` <br> output: `valid`, `response_ticket_number`  |  `clear` | number of most outstanding request
 
 ### Auto-connection between different interfaces
 
-We now explain automatic connection between modules with different interface when connected with `>>>`.
+We now explain automatic connection between modules with different interface when connected with `>>>`.(Component a, b, c, and d are producers.)
 |Producer   |TightlyCoupledIO(e)| ValidIO(f) | DecoupledIO(g) | OutOfOrderIO(h)|  
 |---|---|---|---|---|  
-|TightlyCoupledIO(a)|a.ctrl.stall := e.ctrl.stuck|f.ctrl.in.valid := a.ctrl.stuck \| a.ctrl.stall|a.ctrl.stall := !g.ctrl.in.ready<br> g.ctrl.in.valid := a.ctrl.stall\| a.ctrl.stuck|a.ctrl.stall := !h.ctrl.in.ready<br> h.ctrl.in.valid := a.ctrl.stall\| a.ctrl.stuck| 
-|ValidIO(b)|---|f.ctrl.in.valid := b.ctrl.out.valid<br> b.ctrl.stall := (existing_signals)\|f.ctrl.stall|g.ctrl.in.valid := b.ctrl.out.valid <br> b.ctrl.stall := !g.ctrl.in.ready|h.ctrl.in.valid := b.ctrl.out.valid <br> b.ctrl.stall := !h.ctrl.in.ready| 
-|DecoupledIO(c)|c.ctrl.out.ready := e.ctrl.stuck \| e.ctrl.stall |c.ctrl.out.ready := f.ctrl.stall<br>f.ctrl.in.valid := c.ctrl.out.valid | c.ctrl.out.ready := g.ctrl.in.ready <br> g.ctrl.in.valid := c.ctrl.out.valid|c.ctrl.out.ready := h.ctrl.in.ready <br> h.ctrl.in.valid := c.ctrl.out.valid| 
-|OutOfOrderIO(d)|d.ctrl.out.ready := e.ctrl.stuck \| e.ctrl.stall|d.ctrl.out.ready := f.ctrl.stall<br>f.ctrl.in.valid := d.ctrl.out.valid|d.ctrl.out.ready := g.ctrl.in.ready <br> g.ctrl.in.valid := d.ctrl.out.valid|d.ctrl.out.ready := h.ctrl.in.ready <br> h.ctrl.in.valid := d.ctrl.out.valid|  
+|TightlyCoupledIO(a)|a.ctrl.stall := e.ctrl.stuck|f.ctrl.in.valid := a.ctrl.stuck |a.ctrl.stall := !g.ctrl.in.ready<br> g.ctrl.in.valid := a.ctrl.stuck|a.ctrl.stall := !h.ctrl.in.ready<br> h.ctrl.in.valid := a.ctrl.stuck| 
+|ValidIO(b)|b.ctrl.stall := e.ctrl.stuck|f.ctrl.in.valid := b.ctrl.out.valid<br> b.ctrl.stall := f.ctrl.stuck|g.ctrl.in.valid := b.ctrl.out.valid <br> b.ctrl.stall := !g.ctrl.in.ready|h.ctrl.in.valid := b.ctrl.out.valid <br> b.ctrl.stall := !h.ctrl.in.ready| 
+|DecoupledIO(c)|c.ctrl.out.ready := e.ctrl.stuck |c.ctrl.out.ready := f.ctrl.stuck<br>f.ctrl.in.valid := c.ctrl.out.valid | c.ctrl.out.ready := g.ctrl.in.ready <br> g.ctrl.in.valid := c.ctrl.out.valid|c.ctrl.out.ready := h.ctrl.in.ready <br> h.ctrl.in.valid := c.ctrl.out.valid| 
+|OutOfOrderIO(d)|d.ctrl.out.ready := e.ctrl.stuck |d.ctrl.out.ready := f.ctrl.sutck<br>f.ctrl.in.valid := d.ctrl.out.valid|d.ctrl.out.ready := g.ctrl.in.ready <br> g.ctrl.in.valid := d.ctrl.out.valid|d.ctrl.out.ready := h.ctrl.in.ready <br> h.ctrl.in.valid := d.ctrl.out.valid|  
